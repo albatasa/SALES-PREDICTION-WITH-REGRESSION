@@ -1,0 +1,102 @@
+# Install and load necessary libraries
+library(shiny)
+library(shinydashboard)
+library(car)
+
+# Assuming you have a dataset 'data' with appropriate variables
+data <- data.frame(
+  Month = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+  x1 = c(153000, 112000, 176000, 139000, 125000, 212000, 229000, 205000, 234000, 245000, 257000, 268000),
+  x2 = c(8300, 9700, 10700, 12500, 13200, 9900, 13500, 12800, 14700, 15900, 18000, 21000),
+  x3 = c(5, 6, 8, 4, 5, 7, 9, 5, 2, 5, 6, 5),
+  x4 = c(8.5, 8.2, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 8.7, 8.8, 8.9, 9.0),
+  x5 = c(28000, 21000, 34000, 33000, 39000, 20000, 21000, 31000, 49000, 42000, 57000, 66000),
+  y = c(100, 110, 150, 145, 190, 160, 180, 220, 210, 220, 390, 320)
+)
+
+# Fit regression model
+model_regression <- lm(y ~ x1 + x2 + x3 + x4 + x5, data = data)
+
+# Define UI for application that draws a histogram
+ui <- dashboardPage(
+  dashboardHeader(title = "Sales Prediction Dashboard"),
+  dashboardSidebar(
+    numericInput("x1", "Number of visitors:", value = 200000),
+    numericInput("x2", "Number of Transactions:", value = 12000),
+    numericInput("x3", "Rata-rata Barang/Transaksi:", value = 5),
+    sliderInput("x4", "Average Item/Transaction:", min = 1, max = 10, value = 8.5),
+    numericInput("x5", "Satisfaction Rating
+Number of Ads:", value = 30000)
+  ),
+  dashboardBody(
+    fluidRow(
+      box(
+        width = 12,
+        title = "Regression Prediction",
+        solidHeader = TRUE,
+        status = "danger",
+        verbatimTextOutput("prediction_regression")
+      )
+    ),
+    fluidRow(
+      box(
+        width = 12,
+        title = "Multiple Regression Model",
+        solidHeader = TRUE,
+        status = "warning",
+        verbatimTextOutput("model_regression")
+      )
+    ),
+    fluidRow(
+      box(
+        width = 12,
+        title = "Summary",
+        solidHeader = TRUE,
+        status = "success",
+        verbatimTextOutput("model")
+      )
+    )
+  )
+)
+
+
+server <- function(input, output) {
+  # Predict sales using the regression model
+  prediction_regression <- reactive({
+    predict(model_regression, newdata = data.frame(
+      x1 = input$x1,
+      x2 = input$x2,
+      x3 = input$x3,
+      x4 = input$x4,
+      x5 = input$x5
+    ))
+  })
+  
+  # Display regression prediction
+  output$prediction_regression <- renderPrint({
+    prediction_regression()
+  })
+  
+  # Display ANOVA results
+  output$anova_results <- renderPrint({
+    model_regression$coefficients
+  })
+  
+  # Display model summary
+  output$model <- renderPrint({
+    summary(model_regression)
+  })
+  
+  # Display regression equation
+  output$model_regression <- renderPrint({
+    cat(paste("Y =", round(coef(model_regression)[1], 5), "+",
+              round(coef(model_regression)[2], 5),"* X1 +",
+              round(coef(model_regression)[3], 5),"* X2 +",
+              round(coef(model_regression)[4], 5),"* X3 +",
+              round(coef(model_regression)[5], 5),"* X4 +",
+              round(coef(model_regression)[6], 5),"* X5"))
+  })
+}
+
+# Run Shiny App
+shinyApp(ui, server)
